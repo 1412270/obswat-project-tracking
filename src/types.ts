@@ -11,10 +11,20 @@ export interface Task {
     assignee: string;
     status: Status;
     location: TaskLocation;
+    dueDate?: string;
+    tags: string[];
+}
+
+export interface Sprint {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
 }
 
 export interface AppState {
     tasks: Task[];
+    currentSprint: Sprint;
 }
 
 export type AppAction =

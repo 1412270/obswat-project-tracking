@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,20 +14,20 @@ import {
   OutlinedInput,
   Chip,
 } from '@mui/material';
-import { Status, Task } from '../types';
+import { Task } from '../types';
 import { useApp } from '../context/AppContext';
 import { DEFAULT_ASSIGNEES, TASK_TAGS } from '../constants';
 
-interface CreateTaskModalProps {
+interface EditTaskModalProps {
   open: boolean;
   onClose: () => void;
-  initialStatus?: Status;
+  task: Task | null;
 }
 
-export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
+export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   open,
   onClose,
-  initialStatus = 'TO_DO',
+  task,
 }) => {
   const { dispatch } = useApp();
   const [formData, setFormData] = useState<Omit<Task, 'id'>>({
@@ -36,46 +36,76 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     priority: 'medium',
     storyPoints: 1,
     assignee: '',
-    status: initialStatus,
+    status: 'TO_DO',
     location: 'currentSprint',
     tags: [],
   });
+
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        storyPoints: task.storyPoints,
+        assignee: task.assignee,
+        status: task.status,
+        location: task.location,
+        dueDate: task.dueDate,
+        tags: task.tags || [],
+      });
+    }
+  }, [task]);
 
   const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Get list of assignees including the current task's assignee if not in default list
+  const getAssignees = () => {
+    if (!task) return DEFAULT_ASSIGNEES;
+    const assignees = [...DEFAULT_ASSIGNEES];
+    if (task.assignee && !DEFAULT_ASSIGNEES.includes(task.assignee)) {
+      assignees.push(task.assignee);
+    }
+    return assignees;
+  };
+
   const handleSubmit = () => {
-    if (!formData.title.trim()) {
+    if (!formData.title.trim() || !task) {
       return;
     }
 
-    const newTask: Task = {
-      ...formData,
-      id: `TASK-${Date.now()}`,
-    };
-
-    dispatch({ type: 'ADD_TASK', payload: newTask });
+    dispatch({
+      type: 'UPDATE_TASK',
+      payload: {
+        id: task.id,
+        updates: formData,
+      },
+    });
     handleClose();
   };
 
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'medium',
-      storyPoints: 1,
-      assignee: '',
-      status: initialStatus,
-      location: 'currentSprint',
-      tags: [],
-    });
+    if (task) {
+      setFormData({
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        storyPoints: task.storyPoints,
+        assignee: task.assignee,
+        status: task.status,
+        location: task.location,
+        dueDate: task.dueDate,
+        tags: task.tags || [],
+      });
+    }
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Create New Task</DialogTitle>
+      <DialogTitle>Edit Task</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <TextField
@@ -122,7 +152,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <MenuItem value="">
               <em>Select an assignee</em>
             </MenuItem>
-            {DEFAULT_ASSIGNEES.map((assignee) => (
+            {getAssignees().map((assignee) => (
               <MenuItem key={assignee} value={assignee}>
                 {assignee}
               </MenuItem>
@@ -176,7 +206,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
         <Button onClick={handleSubmit} variant="contained" disabled={!formData.title.trim()}>
-          Create
+          Update
         </Button>
       </DialogActions>
     </Dialog>

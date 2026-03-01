@@ -1,7 +1,13 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AppState, AppAction, Task, Status } from '../types';
+import { AppState, AppAction } from '../types';
 
 const initialState: AppState = {
+  currentSprint: {
+    id: '1',
+    name: 'Sprint 1',
+    startDate: new Date().toISOString().split('T')[0], // Today's date
+    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days from now
+  },
   tasks: [
     {
       id: '1',
@@ -12,6 +18,7 @@ const initialState: AppState = {
       assignee: 'John Doe',
       status: 'TO_DO',
       location: 'currentSprint',
+      tags: ['BE', 'Feature'],
     },
     {
       id: '2',
@@ -22,6 +29,7 @@ const initialState: AppState = {
       assignee: 'Jane Smith',
       status: 'IN_PROGRESS',
       location: 'currentSprint',
+      tags: ['FE', 'Design'],
     },
     {
       id: '3',
@@ -32,6 +40,7 @@ const initialState: AppState = {
       assignee: 'Bob Johnson',
       status: 'DONE',
       location: 'currentSprint',
+      tags: ['Documentation'],
     },
     {
       id: '4',
@@ -42,6 +51,7 @@ const initialState: AppState = {
       assignee: 'Alice Brown',
       status: 'TO_DO',
       location: 'backlog',
+      tags: ['Testing'],
     },
     {
       id: '5',
@@ -52,6 +62,7 @@ const initialState: AppState = {
       assignee: 'Charlie Wilson',
       status: 'TO_DO',
       location: 'backlog',
+      tags: ['BE', 'Enhancement'],
     },
   ],
 };

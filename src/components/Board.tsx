@@ -5,6 +5,7 @@ import {
   Paper,
   Button,
   Grid,
+  Chip,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import {
@@ -47,6 +48,41 @@ export const Board: React.FC = () => {
     return state.tasks.filter(
       (task) => task.status === status && task.location === 'currentSprint'
     );
+  };
+
+  // Get current sprint with fallback
+  const currentSprint = state.currentSprint || {
+    id: '1',
+    name: 'Sprint 1',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  };
+
+  // Get all tasks in current sprint
+  const currentSprintTasks = state.tasks.filter(
+    (task) => task.location === 'currentSprint'
+  );
+
+  // Calculate sprint statistics
+  const totalTasks = currentSprintTasks.length;
+  const totalStoryPoints = currentSprintTasks.reduce(
+    (sum, task) => sum + task.storyPoints,
+    0
+  );
+  const tasksByStatus = {
+    TO_DO: getTasksByStatus('TO_DO').length,
+    IN_PROGRESS: getTasksByStatus('IN_PROGRESS').length,
+    DONE: getTasksByStatus('DONE').length,
+  };
+
+  // Format dates
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -100,8 +136,8 @@ export const Board: React.FC = () => {
         onDragEnd={handleDragEnd}
       >
         <Box sx={{ p: 3 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h5">Kanban Board</Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h5">{currentSprint.name}</Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -110,6 +146,64 @@ export const Board: React.FC = () => {
               Create Task
             </Button>
           </Box>
+
+          {/* Sprint Summary */}
+          <Paper
+            sx={{
+              p: 2,
+              mb: 3,
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Total Tasks
+                </Typography>
+                <Typography variant="h6" fontWeight={600}>
+                  {totalTasks}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Total Story Points
+                </Typography>
+                <Typography variant="h6" fontWeight={600}>
+                  {totalStoryPoints}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Date Range
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {formatDate(currentSprint.startDate)} → {formatDate(currentSprint.endDate)}
+                </Typography>
+              </Box>
+              <Box sx={{ ml: 'auto', display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Chip
+                  label={`TO DO: ${tasksByStatus.TO_DO}`}
+                  size="small"
+                  color="default"
+                  variant="outlined"
+                />
+                <Chip
+                  label={`IN PROGRESS: ${tasksByStatus.IN_PROGRESS}`}
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                />
+                <Chip
+                  label={`DONE: ${tasksByStatus.DONE}`}
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                />
+              </Box>
+            </Box>
+          </Paper>
 
           <Grid container spacing={2}>
             {columns.map((column) => {

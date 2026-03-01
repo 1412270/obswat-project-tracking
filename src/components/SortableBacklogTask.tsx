@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { BacklogTaskCard } from './BacklogTaskCard';
+import { EditTaskModal } from './EditTaskModal';
 import { Task } from '../types';
 
 interface SortableBacklogTaskProps {
@@ -11,6 +12,7 @@ interface SortableBacklogTaskProps {
 export const SortableBacklogTask: React.FC<SortableBacklogTaskProps> = ({
   task,
 }) => {
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const {
     attributes,
     listeners,
@@ -26,10 +28,21 @@ export const SortableBacklogTask: React.FC<SortableBacklogTaskProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleUpdate = () => {
+    setEditModalOpen(true);
+  };
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <BacklogTaskCard task={task} />
-    </div>
+    <>
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <BacklogTaskCard task={task} onUpdate={handleUpdate} />
+      </div>
+      <EditTaskModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        task={task}
+      />
+    </>
   );
 };
 

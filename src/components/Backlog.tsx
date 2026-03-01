@@ -23,7 +23,6 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useApp } from '../context/AppContext';
 import { BacklogTaskCard } from './BacklogTaskCard';
-import { Task } from '../types';
 import { SortableBacklogTask } from './SortableBacklogTask';
 
 export const Backlog: React.FC = () => {
