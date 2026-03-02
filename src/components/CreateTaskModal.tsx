@@ -13,10 +13,13 @@ import {
   InputLabel,
   OutlinedInput,
   Chip,
+  Typography,
+  IconButton,
 } from '@mui/material';
-import { Status, Task } from '../types';
+import { Status, Task, Subtask } from '../types';
 import { useApp } from '../context/AppContext';
 import { DEFAULT_ASSIGNEES, TASK_TAGS } from '../constants';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 
 interface CreateTaskModalProps {
   open: boolean;
@@ -27,22 +30,59 @@ interface CreateTaskModalProps {
 export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   open,
   onClose,
-  initialStatus = 'TO_DO',
+  initialStatus,
 }) => {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
+  const defaultStatus = initialStatus ?? state.boardColumns[0]?.id ?? 'TO_DO';
   const [formData, setFormData] = useState<Omit<Task, 'id'>>({
     title: '',
     description: '',
     priority: 'medium',
     storyPoints: 1,
-    assignee: '',
-    status: initialStatus,
+    assignees: [],
+    status: defaultStatus,
     location: 'currentSprint',
     tags: [],
+    subtasks: [],
+  });
+
+  const createEmptySubtask = (): Subtask => ({
+    id: `SUBTASK-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: '',
+    assignees: [],
+    tags: [],
+    status: defaultStatus,
   });
 
   const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddSubtask = () => {
+    setFormData((prev) => ({
+      ...prev,
+      subtasks: [...prev.subtasks, createEmptySubtask()],
+    }));
+  };
+
+  const handleSubtaskChange = (
+    subtaskId: string,
+    field: keyof Subtask,
+    value: any
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      subtasks: prev.subtasks.map((subtask) =>
+        subtask.id === subtaskId ? { ...subtask, [field]: value } : subtask
+      ),
+    }));
+  };
+
+  const handleDeleteSubtask = (subtaskId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      subtasks: prev.subtasks.filter((subtask) => subtask.id !== subtaskId),
+    }));
   };
 
   const handleSubmit = () => {
@@ -65,10 +105,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       description: '',
       priority: 'medium',
       storyPoints: 1,
-      assignee: '',
-      status: initialStatus,
+      assignees: [],
+      status: defaultStatus,
       location: 'currentSprint',
       tags: [],
+      subtasks: [],
     });
     onClose();
   };
@@ -112,22 +153,35 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             value={formData.storyPoints}
             onChange={(e) => handleChange('storyPoints', parseInt(e.target.value) || 1)}
           />
-          <TextField
-            label="Assignee"
-            select
-            fullWidth
-            value={formData.assignee}
-            onChange={(e) => handleChange('assignee', e.target.value)}
-          >
-            <MenuItem value="">
-              <em>Select an assignee</em>
-            </MenuItem>
-            {DEFAULT_ASSIGNEES.map((assignee) => (
-              <MenuItem key={assignee} value={assignee}>
-                {assignee}
-              </MenuItem>
-            ))}
-          </TextField>
+          <FormControl fullWidth>
+            <InputLabel shrink>Assignees</InputLabel>
+            <Select
+              multiple
+              displayEmpty
+              value={formData.assignees}
+              onChange={(e) => handleChange('assignees', e.target.value)}
+              input={<OutlinedInput label="Assignees" />}
+              renderValue={(selected) => {
+                const assignees = selected as string[];
+                if (assignees.length === 0) {
+                  return <em>Select assignees</em>;
+                }
+                return (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {assignees.map((assignee) => (
+                      <Chip key={assignee} label={assignee} size="small" />
+                    ))}
+                  </Box>
+                );
+              }}
+            >
+              {DEFAULT_ASSIGNEES.map((assignee) => (
+                <MenuItem key={assignee} value={assignee}>
+                  {assignee}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <TextField
             label="Status"
             select
@@ -135,9 +189,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             value={formData.status}
             onChange={(e) => handleChange('status', e.target.value)}
           >
-            <MenuItem value="TO_DO">TO DO</MenuItem>
-            <MenuItem value="IN_PROGRESS">IN PROGRESS</MenuItem>
-            <MenuItem value="DONE">DONE</MenuItem>
+            {state.boardColumns.map((column) => (
+              <MenuItem key={column.id} value={column.id}>
+                {column.title}
+              </MenuItem>
+            ))}
           </TextField>
           <TextField
             label="Due Date"
@@ -171,6 +227,122 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               ))}
             </Select>
           </FormControl>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography variant="subtitle2">Subtasks</Typography>
+              <Button size="small" onClick={handleAddSubtask}>
+                Add Subtask
+              </Button>
+            </Box>
+            {formData.subtasks.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No subtasks added yet.
+              </Typography>
+            ) : (
+              formData.subtasks.map((subtask, index) => (
+                <Box
+                  key={subtask.id}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
+                >
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="subtitle2">Subtask {index + 1}</Typography>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteSubtask(subtask.id)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <TextField
+                    label="Subtask Name"
+                    fullWidth
+                    value={subtask.name}
+                    onChange={(e) => handleSubtaskChange(subtask.id, 'name', e.target.value)}
+                  />
+                  <TextField
+                    label="Status"
+                    select
+                    fullWidth
+                    value={subtask.status}
+                    onChange={(e) => handleSubtaskChange(subtask.id, 'status', e.target.value)}
+                  >
+                    {state.boardColumns.map((column) => (
+                      <MenuItem key={column.id} value={column.id}>
+                        {column.title}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <FormControl fullWidth>
+                    <InputLabel shrink>Assignees</InputLabel>
+                    <Select
+                      multiple
+                      displayEmpty
+                      value={subtask.assignees}
+                      onChange={(e) => handleSubtaskChange(subtask.id, 'assignees', e.target.value)}
+                      input={<OutlinedInput label="Assignees" />}
+                      renderValue={(selected) => {
+                        const assignees = selected as string[];
+                        if (assignees.length === 0) {
+                          return <em>Select assignees</em>;
+                        }
+                        return (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {assignees.map((assignee) => (
+                              <Chip key={assignee} label={assignee} size="small" />
+                            ))}
+                          </Box>
+                        );
+                      }}
+                    >
+                      {DEFAULT_ASSIGNEES.map((assignee) => (
+                        <MenuItem key={assignee} value={assignee}>
+                          {assignee}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel shrink>Tags</InputLabel>
+                    <Select
+                      multiple
+                      displayEmpty
+                      value={subtask.tags}
+                      onChange={(e) => handleSubtaskChange(subtask.id, 'tags', e.target.value)}
+                      input={<OutlinedInput label="Tags" />}
+                      renderValue={(selected) => {
+                        const tags = selected as string[];
+                        if (tags.length === 0) {
+                          return <em>Select tags</em>;
+                        }
+                        return (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {tags.map((tag) => (
+                              <Chip key={tag} label={tag} size="small" />
+                            ))}
+                          </Box>
+                        );
+                      }}
+                    >
+                      {TASK_TAGS.map((tag) => (
+                        <MenuItem key={tag} value={tag}>
+                          {tag}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+              ))
+            )}
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions>

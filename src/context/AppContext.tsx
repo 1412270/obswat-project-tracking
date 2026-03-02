@@ -8,6 +8,11 @@ const initialState: AppState = {
     startDate: new Date().toISOString().split('T')[0], // Today's date
     endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days from now
   },
+  boardColumns: [
+    { id: 'TO_DO', title: 'TO DO' },
+    { id: 'IN_PROGRESS', title: 'IN PROGRESS' },
+    { id: 'DONE', title: 'DONE' },
+  ],
   tasks: [
     {
       id: '1',
@@ -15,10 +20,11 @@ const initialState: AppState = {
       description: 'Add login and registration functionality',
       priority: 'high',
       storyPoints: 8,
-      assignee: 'John Doe',
+      assignees: ['John Doe'],
       status: 'TO_DO',
       location: 'currentSprint',
       tags: ['BE', 'Feature'],
+      subtasks: [],
     },
     {
       id: '2',
@@ -26,10 +32,11 @@ const initialState: AppState = {
       description: 'Create mockups and implement dashboard components',
       priority: 'medium',
       storyPoints: 5,
-      assignee: 'Jane Smith',
+      assignees: ['Jane Smith'],
       status: 'IN_PROGRESS',
       location: 'currentSprint',
       tags: ['FE', 'Design'],
+      subtasks: [],
     },
     {
       id: '3',
@@ -37,10 +44,11 @@ const initialState: AppState = {
       description: 'Document all REST API endpoints',
       priority: 'low',
       storyPoints: 3,
-      assignee: 'Bob Johnson',
+      assignees: ['Bob Johnson'],
       status: 'DONE',
       location: 'currentSprint',
       tags: ['Documentation'],
+      subtasks: [],
     },
     {
       id: '4',
@@ -48,10 +56,11 @@ const initialState: AppState = {
       description: 'Write tests for core functionality',
       priority: 'high',
       storyPoints: 5,
-      assignee: 'Alice Brown',
+      assignees: ['Alice Brown'],
       status: 'TO_DO',
       location: 'backlog',
       tags: ['Testing'],
+      subtasks: [],
     },
     {
       id: '5',
@@ -59,10 +68,11 @@ const initialState: AppState = {
       description: 'Review and optimize slow queries',
       priority: 'medium',
       storyPoints: 3,
-      assignee: 'Charlie Wilson',
+      assignees: ['Charlie Wilson'],
       status: 'TO_DO',
       location: 'backlog',
       tags: ['BE', 'Enhancement'],
+      subtasks: [],
     },
   ],
 };
@@ -109,6 +119,36 @@ function appReducer(state: AppState, action: AppAction): AppState {
             ? { ...task, status: action.payload.status }
             : task
         ),
+      };
+    case 'ADD_BOARD_COLUMN':
+      return {
+        ...state,
+        boardColumns: [...state.boardColumns, action.payload],
+      };
+    case 'REMOVE_BOARD_COLUMN': {
+      const remainingColumns = state.boardColumns.filter(
+        (column) => column.id !== action.payload.id
+      );
+      if (remainingColumns.length === state.boardColumns.length) {
+        return state;
+      }
+      if (remainingColumns.length === 0) {
+        return state;
+      }
+      const fallbackColumnId =
+        remainingColumns[0]?.id || state.boardColumns[0]?.id || 'TO_DO';
+      return {
+        ...state,
+        boardColumns: remainingColumns,
+        tasks: state.tasks.map((task) =>
+          task.status === action.payload.id ? { ...task, status: fallbackColumnId } : task
+        ),
+      };
+    }
+    case 'REORDER_BOARD_COLUMNS':
+      return {
+        ...state,
+        boardColumns: action.payload,
       };
     case 'DELETE_TASK':
       return {

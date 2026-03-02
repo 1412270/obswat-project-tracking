@@ -13,13 +13,15 @@ A single-page React application that mimics a Jira backlog and Kanban board for 
   - Title
   - Priority badge (high/medium/low)
   - Story points
-  - Assignee with avatar circle
+  - Assignees with avatar circle
+  - Expandable subtasks list
 
 ### Board Tab (Kanban)
-- **3 Columns**: TO DO, IN PROGRESS, DONE
-- **Task Cards**: Display title, description, priority, story points, and assignee
+- **Dynamic Columns**: Add, remove, and drag to reorder columns
+- **Task Cards**: Display title, description, priority, story points, assignees, and subtasks
 - **Drag & Drop**: Move tasks between columns
 - **Create Task**: "+" button opens a modal form to create new tasks
+- **Delete Task**: Delete with confirmation modal
 
 ## Technologies
 
